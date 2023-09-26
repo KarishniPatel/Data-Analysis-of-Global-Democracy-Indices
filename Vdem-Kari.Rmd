@@ -1,0 +1,1156 @@
+---
+title: "Exploratory Data Analysis of VDem Democracy Data"
+author: "Karishni Patel and Michael Ryvin"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+#runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+```{r}
+library(rmdformats)
+library(vdemdata)
+library(ggplot2)
+library(httr)
+library(rvest)
+library(countrycode)
+library(plotly)
+library(shiny)
+library(tidyverse)
+library(ggbeeswarm)
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(tm)
+library(RColorBrewer)
+library(ggthemes)
+
+data <- vdem
+data$continent <- countrycode(data$country_text_id, "iso3c", "continent")
+```
+# **Introduction**
+
+In this project, we will perform an exploratory data analysis of the vdem dataset. In total, this dataset has 27555 rows with 4603 columns. Each row corresponds to a combined country+year. For example, there is a row for India in 2022, India in 2021, China in 2022, China in 2021, etc. The years range from 1789 to 2022, though not every country has a row for every year in this range. 
+
+The dataset includes countries from before they gained independence, so it would contain data on places such as India from before 1947. It also includes some countries which are currently unrecognized, such as Somaliland, and countries that no longer exist, such as South Vietnam. 
+
+The main variables in this dataset have to do with the levels of democracy in each country in each year. There are five of these variables: The Electoral Democracy Index, the Liberal Democracy Index, the Participatory Democracy Index, the Deliberative Democracy Index, and the Egalitarian Democracy Index. In this project, we will be primarily analyzing these indices. The descriptions of these Indices are as follows:
+
+**Electoral Democracy Index** - This is the most general democracy index, and is considered a part of every other democracy index. It generally refers to the strength of the country's electoral processes and how well the democracy functions from an administrative perspective. 
+
+**Liberal Democracy Index** - This democracy index refers to the concept of liberalism, or essentially the rights and freedoms that people have. Is there tyranny of majority, do people have innate freedoms, etc.
+
+**Participatory Democracy Index** - This democracy index refers to the extent to which people participate in the democratic processes. Can everyone vote, is there high turnout, etc.
+
+**Deliberative Democracy Index** - This democracy index refers to the extent to which policies are deliberated over before being enacted. Does everyone have a voice in the deliberative process, or only a select few?
+
+**Egalitarian Democracy Index** - This democracy index refers to the level of equality that there is between different groups of people. Is there a disparity based on wealth, race, religion, etc?
+
+# **Democracy Indices by Continent**
+
+In this section, we will look at the democracy indices in a more general sense, by generalizing them by continent. Each of these will be subset to only include data points from the year 2022, so that we can see the modern democracy indices rather than the historical ones. Some of the historical democracy indices will be analyzed later on.
+
+## Electoral Democracy Index
+```{r}
+df3 <- data %>% filter(year == 2022 & continent != "NA") %>% select(v2x_polyarchy, year, continent, country_name) %>% na.omit()
+
+df3 %>% ggplot(aes(continent, v2x_polyarchy, fill = continent)) +
+  geom_boxplot(color = "black", size = 0.8) +
+  scale_fill_manual(values = c("Europe" = "dodgerblue2", "Americas" = "chocolate1", "Asia" = "firebrick2", "Africa" = "chartreuse3", "Oceania" = "darkorchid1")) +
+  labs(x = "Continent", y = "Polyarchy", title = "Electoral Democracy Index by Continent") +
+  theme_fivethirtyeight()
+
+```
+
+We can see from these results that the highest continent for Electoral Democracy Index is Europe, followed closely by the Americas and Oceania. This will largely hold true for all 5 democracy indices. 
+
+Europe being on top makes sense, as the majority of this continent is made up of democracies. While some democracies may not be very strong, a weak democracy tends to have a higher democracy index than countries that are completely autocratic. The two outliers noticeable in Europe are Belarus and Russia, both of which are considered fairly autocratic in 2022.
+
+Oceania is fairly high largely due to the sample size of Oceania. While no country is very undemocratic in Oceania, it contains two countries - Australia and New Zealand - which have very high democracy indices. Given that there are only 6 data points for Oceania, this ends up skewing the result, and not much can be extrapolated. 
+
+Americas contains a wide range of countries, ranging from Costa Rica at the high end of democracy index to Cuba at the lower end. Few countries in the Americas are very totalitarian, and so the high number of fairly democratic countries raises the average to having a fairly high median Electoral Democracy Index.
+
+Asia and Africa are generally in the same boat, as both have a high number of autocratic countries. Even though Asia contains some countries with very high democracy indices, like Japan and South Korea, the existence of many monarchies and dictatorships brings the median down. However, this wider range for Asia can be noted in the box plots, as the box is wider for Asia than it is for Africa.
+
+## Liberal Democracy Index
+```{r}
+df3 <- data %>% filter(year == 2022 & continent != "NA") %>% select(v2x_libdem, year, continent) %>% na.omit()
+
+df3 %>% ggplot(aes(continent, v2x_libdem, fill = continent)) +
+  geom_boxplot(color = "black", size = 0.8) +
+  scale_fill_manual(values = c("Europe" = "dodgerblue2", "Americas" = "chocolate1", "Asia" = "firebrick2", "Africa" = "chartreuse3", "Oceania" = "darkorchid1")) +
+  labs(x = "Continent", y = "Polyarchy", title = "Liberal Democracy Index by Continent") +
+  theme_fivethirtyeight()
+
+```
+
+The most notable change with this box plot of Liberal Democracy Indices is that the median significantly lowered for every continent. This is largely due to the methodology of this index, but generally shows that there is far more improvement that can be done when it comes to the liberties that people hold in countries. 
+
+## Participatory Democracy Index
+``` {r}
+df3 <- data %>% filter(year == 2022 & continent != "NA") %>% select(v2x_partipdem, year, continent) %>% na.omit()
+
+df3 %>% ggplot(aes(continent, v2x_partipdem, fill = continent)) +
+  geom_boxplot(color = "black", size = 0.8) +
+  scale_fill_manual(values = c("Europe" = "dodgerblue2", "Americas" = "chocolate1", "Asia" = "firebrick2", "Africa" = "chartreuse3", "Oceania" = "darkorchid1")) +
+  labs(x = "Continent", y = "Polyarchy", title = "Participatory Democracy Index by Continent") +
+  theme_fivethirtyeight()
+
+```
+
+The participatory democracy index is even lower for each continent. Despite the fact that many countries are fairly democratic from an electoral perspective, this does not mean that they have high participation rates in the electoral processes. This is an issue plaguing all of the world's democracies, with it being difficult to persuade people to go out and participate in the democratic process.
+
+Africa and Asia do not seem to suffer as much of a drop as the other continents, largely due to the fact that there are fewer democracies anyway to have low participation rates.
+
+## Deliberative Democracy Index
+```{r}
+df3 <- data %>% filter(year == 2022 & continent != "NA") %>% select(v2x_delibdem, year, continent) %>% na.omit()
+
+df3 %>% ggplot(aes(continent, v2x_delibdem, fill = continent)) +
+  geom_boxplot(color = "black", size = 0.8) +
+  scale_fill_manual(values = c("Europe" = "dodgerblue2", "Americas" = "chocolate1", "Asia" = "firebrick2", "Africa" = "chartreuse3", "Oceania" = "darkorchid1")) +
+  labs(x = "Continent", y = "Polyarchy", title = "Deliberative Democracy Index by Continent") +
+  theme_fivethirtyeight()
+
+```
+
+This democracy index has the widest range as well as the most parity across the continents. While deliberation here is considered a cornerstone of democracy, it is not a strong aspect of every democracy in the world. On top of this, many autocratic nations may still involve deliberation of policies, even if not done by the whole population as a whole. As such, while the continents with stronger electoral democracy indices are still higher, the differences for this metric are less stark.
+
+## Egalitarian Democracy Index
+```{r}
+df3 <- data %>% filter(year == 2022 & continent != "NA") %>% select(v2x_egaldem, year, continent) %>% na.omit()
+
+df3 %>% ggplot(aes(continent, v2x_egaldem, fill = continent)) +
+  geom_boxplot(color = "black", size = 0.8) +
+  scale_fill_manual(values = c("Europe" = "dodgerblue2", "Americas" = "chocolate1", "Asia" = "firebrick2", "Africa" = "chartreuse3", "Oceania" = "darkorchid1")) +
+  labs(x = "Continent", y = "Polyarchy", title = "Egalitarian Democracy Index by Continent") +
+  theme_fivethirtyeight()
+
+```
+
+Finally, the egalitarian index is where Europe truly is noticed to have the strongest democracies. Europe, of course, is not made up of perfectly equal societies. This is extremely evident by the rise in right-wing and far-right politics following the Syrian migrant crisis in the early 2010s and the rise of ISIS at this time as well. However, Europe is aided by the fact that despite this slowly increasing racial diversity, the majority of the countries here are largely homogeneous when it comes to race and ethnicity. Minority ethnic groups do exist, but they are far less frequent and far less noticeable than in the multiracial and multiethnic countries of the Americas. It is more difficult for a country to be discrimatory if there are fewer people to discriminate against.
+
+Furthermore, Europe tends to have lower rates of economic inequality, largely due to the more left-leaning economic policies in the continent that simultaneously provide many government services while also making it more difficult to make extremely large sums of money.
+
+While the Americas may have strong democracies, they suffer from high levels of economic and racial inequality, thus lowering the median.
+
+# **Major vs High Fluctuating Countries**
+
+In this section, we will look at the 5 indices again, but this time seeing how they change with time. The countries to be observed are what we deem to be "major" countries, as well as the top 3 countries that fluctuate the most for a given index.
+
+The major countries we chose to look at were the 5 permanent UN Security Council members, plus India. While a number of other countries could be considered "major," we wanted to limit the amount of lines on the graph, and so the permanent UN Security Council Members was considered to be a good subset of important countries. India was added largely due to its immense population, and as this would be a major country of interest to both our group as well as the class as a whole.
+
+```{r}
+### Subsetting the high level democracy indices
+data <- data.frame(data)
+High_Level_Indices = data[c("country_name","year","v2x_polyarchy","v2x_polyarchy","v2x_polyarchy","v2x_libdem","v2x_partipdem","v2x_delibdem","v2x_egaldem")]
+```
+
+The function below was made to find the countries with the highest fluctuation for a given democracy index. 
+```{r}
+### Defining a function that takes the tibble and a column name
+### and returns the countries with the highest fluctuation
+### in that column
+top_fluctuation_countries <- function(data,column) {
+  data %>% 
+  group_by(country_name) %>% 
+  summarize(min_v2x_polyarchy = min(.data[[column]], na.rm = TRUE),
+            max_v2x_polyarchy = max(.data[[column]], na.rm = TRUE)) %>% 
+  ungroup() %>%
+  mutate(diff = max_v2x_polyarchy - min_v2x_polyarchy) %>%
+  arrange(desc(diff)) %>%
+  select(country_name) %>%
+  head(3)
+}
+
+```
+
+## Electoral Democracy
+
+### Major Countries
+```{r}
+### Electoral democracy in major countries
+High_Level_Indices %>%
+  filter(country_name %in% c("India","France", "Russia","United States of America","United Kingdom","China")) %>%
+  ggplot(aes(x=year,y=v2x_polyarchy,color=country_name)) + geom_line(size = 1) + labs(x="Year",y="Electoral Democracy", color = "Country") +
+  theme_fivethirtyeight() +
+  ggtitle("Electoral Democracy Index in Major Countries")
+
+```
+
+Just like with the boxplots, the electoral democracy index will largely sum up the trends we see with all of the other indices. As such, we will primarily go over interesting points in time when covering the electoral democracy index.
+
+*China* - Relative to the other major countries, China has a very low level of fluctuation. It has remained largely autocratic throughout its existence, though there have been a couple of notable points. The democracy index rises following the fall of the Qing empire in 1912. While a sort of republic is attempted to be established by Chiang Kai-Shek, this ultimately fails due to Civil War and invasion by Japan in World War 2. We see one final spike during the second phase of the Chinese Civil War, but this spike proves to be temportary following the victory of the communist forces in the war.
+
+*India* - India was largely undemocratic while under British rule, which makes sense considering the fact that it was a colony of the British empire. While it does undergo a moderate rise, the real spike in democracy level occurs immediately after it gains its independence. After this, it becomes a fairly democratic country, surpassing even the United States for a short period of time. There is a short spike downwards during the prime ministership of Indira Gandhi in the mid-1970s, when she declared a national state state of emergency and temporarily assumed more authoritarian governance. After this, India rebounded and slowly rose to have a peak democracy level in the late 1990s. Since then there has been a precipitous drop, with the democracy level being considered to be similar to that of during The Emergency.
+
+*United Kingdom* - The UK does not have many notable moments, as generally there has just been a steady rise in democratic levels over time. Some parts to note are the large rise following World War I, when suffrage was increased, as well as the small dip that occurred during World War II. There also exists a smaller rise in the late 1990s, which will be more visible in a later graph.
+
+*France* - France has had a large degree of fluctuation for a major country. We see it start off on par with the UK, but have a massive drop once Napoleon Bonaparte comes to power. After the Napoleonic wars, this drop is somewhat subsided, though a large rise does not occur until the 1848 revolution. This rise is also short-lived, as a democratic government is quickly replaced by another empire, this time under Napoleon III. Once his reign ends, however, France becomes far more democratic, being the most democratic on this list for a while, eventually being surpassed by the UK. France stays largely stagnant following this, but experiences a minor decrease during World War I and a major decrease while being occupied by Nazi Germany in World War II. Following the war, France rises massively, and slowly continues to rise. A small bump occurs when the French Fourth Republic is replaced by Charles de Gaulle with the French Fifth Republic in 1958.
+
+*Russia* - Russia is an autocracy for the majority of this graph. Starting off as an absolute monarchy, a very minor bump first occurs in 1861 when serfdom was 'officially' abolished. A larger bump occurs following the Russian Revolution and the deposition of the Czar, but this bump is small and things remain largely unchanged until the fall of the Soviet Union. Once this occurs, Russia experiences a massive bump, which decreases slightly over the course of the 1990s. However, this decrease increases rapidly over the course of the 21st century, with it seemingly headed towards a further decrease.
+
+*United States* - While the US starts off as the most democratic country on this list, inequality largely holds it back from keeping the spot forever. Not much changes until the 1890s, with the few changes seemingly being negative due the treatment of slaves and Black Americans. Two moderate jumps occur at the end of the 19th century and beginning of 20th century, largely due to Progressive Era reforms and the 19th Amendment, which granted women the right to vote. After this, there is a slow and steady rise as more reforms are passed to provide better equality for women and people of color. There are some drops in the 21st century, which will be discussed later.
+
+### High Fluctuation Countries
+```{r}
+### Electoral democracy in high fluctuation countries
+High_Level_Indices %>%
+  filter(country_name %in% ((top_fluctuation_countries(High_Level_Indices,"v2x_polyarchy")$country_name))) %>%
+  ggplot(data=.,aes(x=year,y=v2x_polyarchy,color=country_name)) + geom_line(size = 1) +
+  ggtitle("Top Fluctuating Countries by Electoral Democracy") +
+  theme_fivethirtyeight() + labs(x="Year",y="Electoral Democracy", color = "Country")
+
+
+```
+
+The graphs above show the countries with the most fluctuation in democracy score. This is largely due to different governments being in charge.
+
+In the case of Norway, it is slowly transitioning from being a monarchy to a constitutional monarchy hence the slow rise. The only major drop occurs during World War II, when they were occupied by the Nazis. 
+
+Poland's fluctuation stems from its own democratic downfalls and its constant occupations. It starts off being a Russian territory, eventually gaining independence after World War I. While it stays democratic briefly, this quickly falls. After World War II, it becomes an undemocratic Soviet satellite state. After the Cold War, it becomes far more democratic. However, recent governmental actions have caused it to uncergo democratic backsliding once again.
+
+Portugal has changed often due to regime changes. Fluctuating between monarchy and dictatorship, it does not truly become a democracy until the latter half of the 20th century.
+
+## Liberal Democracy
+
+### Major Countries
+```{r}
+### Liberal democracy in major countries
+High_Level_Indices %>%
+  filter(country_name %in% c("India","France", "Russia","United States of America","United Kingdom","China")) %>%
+  ggplot(aes(x=year,y=v2x_libdem,color=country_name)) + geom_line(size = 1) + labs(x="Year",y="Liberal Democracy", color = "Country") +
+  theme_fivethirtyeight() +
+  ggtitle("Liberal Democracy Index in Major Countries")
+
+
+```
+
+All of these liberal democracy indices above are lower than the electoral democracy indices. This is particularly more noticable in Russia and India. 
+
+### High Fluctuation Countries
+```{r}
+### Liberal democracy in high fluctuation countries
+High_Level_Indices %>%
+  filter(country_name %in% ((top_fluctuation_countries(High_Level_Indices,"v2x_libdem")$country_name))) %>%
+  ggplot(data=.,aes(x=year,y=v2x_libdem,color=country_name)) + geom_line(size = 1) +
+  ggtitle("Top Fluctuating Countries by Liberal Democracy") +
+  theme_fivethirtyeight() + labs(x="Year",y="Liberal Democracy", color = "Country")
+
+
+```
+
+The countries above have the most fluctuating for liberal democracy index. 
+
+Chile has experienced a number of dictatorships, resulting in repeated rises and falls of the index. 
+
+Czechia starts off its history (as Czechoslovakia) being fairly democratic, but is unable to sustain this democratic level following invasion by the Nazis and later being a Soviet puppet state for the latter half of the 20th century. After the end of the Cold War, it became far more democratic, with some fluctuation. 
+
+Germany up until after WWI is a monarchy, with slow democratic reforms helping to improve its liberal democracy index. Following WWI, it improves massively, though this is short lived following the rise of Hitler. However, after WWII, Germany becomes extremely democratic immediately, and has since experienced minor fluctuations.
+
+## Participatory Democracy
+
+### Major Countries
+```{r}
+
+### Participation democracy in major countries
+High_Level_Indices %>%
+  filter(country_name %in% c("India","France", "Russia","United States of America","United Kingdom","China")) %>%
+  ggplot(aes(x=year,y=v2x_partipdem,color=country_name)) + geom_line(size = 1) + labs(x="Year",y="Participatory Democracy", color = "Country") +
+  theme_fivethirtyeight() +
+  ggtitle("Participatory Democracy Index in Major Countries")
+
+```
+
+This is similar to the other two graphs. The only noticeable change is the fact that there is a minor spike in Russia very recently, which is likely caused by the fact that Russia had a legislative election in 2021 that may have had a decent turnout.
+
+### High Fluctuation Countries
+```{r}
+### Participation democracy in high fluctuation countries
+High_Level_Indices %>%
+  filter(country_name %in% ((top_fluctuation_countries(High_Level_Indices,"v2x_partipdem")$country_name))) %>%
+  ggplot(data=.,aes(x=year,y=v2x_partipdem,color=country_name)) + geom_line(size = 1) +
+  ggtitle("Top Fluctuating Countries by Participatory Democracy") +
+  theme_fivethirtyeight() + labs(x="Year",y="Participatory Democracy", color = "Country")
+
+```
+
+The countries that fluctuate the most for participatory index above.
+
+There is not much to say about these countries that has not already been said about others. 
+
+Switzerland simply has a slow rise as more reforms are passed allowing more people to 
+
+Denmark has a similar slow rise, with the noted dip while being occupied by the Nazis in WWII.
+
+Uruguay has fluctuations due to dictatorships, but has had decent participation during the times when it has been democratic. However, the recent dip is concerning.
+
+## Deliberative Democracy
+
+### Major Countries
+```{r}
+### Deliberate democracy in major countries
+High_Level_Indices %>%
+  filter(country_name %in% c("India","France","Russia","United States of America","United Kingdom","China")& year >= 1900) %>%
+  ggplot(aes(x=year,y=v2x_delibdem,color=country_name)) + geom_line(size = 1) + labs(x="Year",y="Deliberative Democracy", color = "Country") +
+  theme_fivethirtyeight() +
+  ggtitle("Deliberative Democracy Index in Major Countries")
+
+```
+
+The Deliberative index can only be seen from the year 1900 and later. Here we see similar trends, though notably Russia and China are far more similar in the deliberative index than in any other index.
+
+### High Fluctuation Countries
+```{r}
+### Deliberate democracy in high fluctuation countries
+High_Level_Indices %>%
+  filter(country_name %in% ((top_fluctuation_countries(High_Level_Indices,"v2x_delibdem")$country_name))& year >= 1900) %>%
+  ggplot(data=.,aes(x=year,y=v2x_delibdem,color=country_name)) + geom_line(size = 1) +
+  ggtitle("Top Fluctuating Countries by Deliberative Democracy") +
+  theme_fivethirtyeight() + labs(x="Year",y="Deliberative Democracy", color = "Country")
+
+
+
+```
+
+All three of these countries have been mentioned before, so not much more can be said. All the trends are caused by the same afforementioned events.
+
+## Egalitarian Democracy
+
+### Major Countries
+```{r}
+### Egalitarian democracy in major countries
+High_Level_Indices %>%
+  filter(country_name %in% c("India","France","Russia","United States of America","United Kingdom","China") & year >= 1900) %>%
+  ggplot(aes(x=year,y=v2x_egaldem,color=country_name)) + geom_line() + labs(x="Year",y="Egalitarian Democracy") + geom_line(size = 1) +
+  ggtitle("Top Fluctuating Countries by Egalitarian Democracy") +
+  theme_fivethirtyeight() + labs(x="Year",y="Egalitarian Democracy", color = "Country")
+
+```
+
+This index is notable for how low India is, with its egalitarian index being fairly close to Russia's. It is also notable due to the lack of a substantial rise in the US after the end of the Trump presidency and the beginning of the Biden presidency.
+
+### High Fluctuation Countries
+```{r}
+### Egalitarian democracy in high fluctuation countries
+High_Level_Indices %>%
+  filter(country_name %in% ((top_fluctuation_countries(High_Level_Indices,"v2x_egaldem")$country_name)) & year >= 1900) %>%
+  ggplot(data=.,aes(x=year,y=v2x_egaldem,color=country_name)) + geom_line(size = 1) +
+  ggtitle("Top Fluctuating Countries by Egalitarian Democracy") +
+  theme_fivethirtyeight() + labs(x="Year",y="Egalitarian Democracy", color = "Country")
+
+
+```
+
+The trends in Germany and Portugal are the same as before. 
+
+Italy starts off the index as a monarchy. While it has some democratic reforms, these largely go away following the rise of Mussolini in the early 1920s until after WWII. Here it is notable that following WWII, Italy does not experience as large of a rise as Germany does. It takes much longer for it to rise too, and remains below Germany for the rest of the graph. Another notable thing is that Italy is below Germany in egalitarianism even during WWII, while the Nazis were committing the Holocaust.
+
+# **Slope Coefficients**
+
+In the following section, we will observe the changes in Electoral Democracy Index that have occurred over the years by continent by using linear models and nesting.
+```{r}
+#Keep only rows after after 1899 that have a continent
+data2 <- data %>% 
+  filter(!is.na(continent)) %>% 
+  filter(year >= 1900)
+
+#Keep only relevant columns
+nested_data <- data2 %>% 
+  select(country_name, continent, year, v2x_polyarchy)
+
+#Nest the variables important to model
+nested_data <- nested_data %>% 
+  nest(data = c(year, v2x_polyarchy))
+
+#Model
+fit_lm <- function(data) {
+  lm(v2x_polyarchy ~ year, data = data)
+}
+
+#Map the Models
+lm_models <- nested_data %>% 
+  mutate(model = map(data, fit_lm))
+
+tidy_data <- lm_models %>% 
+  mutate(tidy_model = map(model, broom::tidy)) %>% 
+  unnest(cols = tidy_model) %>% 
+  select(continent, country_name, term, estimate, statistic)
+
+#Find the slope coefficients based on the models
+slope_data <- tidy_data %>% 
+  filter(term == "year") %>% 
+  select(continent, country_name, estimate, statistic)
+
+#Define colors
+colors <- c("Europe" = "dodgerblue2", "Americas" = "chocolate1", "Asia" = "firebrick2", "Africa" = "chartreuse3", "Oceania" = "darkorchid1")
+
+#Beeswarm plot for slope coefficient
+ggplot(slope_data, aes(x = continent, y = estimate, color = continent)) +
+  geom_beeswarm() +
+  scale_color_manual(values = colors) +
+  labs(x = "Continent", y = "Slope Coefficient", title = "Slope Coefficient by Continent") +
+  theme_fivethirtyeight()
+
+```
+
+Above we see a beeswarm plot of slope coefficients by continent. This shows the slopes of increase (or decrease) in Electoral Democracy index by year from 1900 to 2023. We can see from this graph that very few countries had a decrease in Democracy Index in this time frame, with the vast majority having varying increases. 
+
+There also does not appear to be much difference from one continent to another, with every continent having relatively similar increases. It can be noted that the distribution seems to be generally wider in Asia, with it having both the country with the largest slope and the most countries with negative slopes, at 4. 
+
+
+# **Top Countries by Democracy Index**
+
+**In this section, we will be finding the countries with the highest democracy indexes**
+
+In the following code, we will use web scraping to find the flag of every country in the dataset. Some countries may not have flags if they are countries that no longer exist. In situations where this is the case, the flag will be left blank.
+```{r}
+data$flag_image <- ""
+```
+
+**The following chunk of code is not run in the html to save time. In order for the flags to be shown later, it MUST be run.**
+```{r, eval = FALSE}
+
+# loop through country_names
+for (country_name in unique(data$country_name)) {
+  
+  tryCatch({
+    # make the wikipedia URL for the country
+    url <- paste0("https://en.wikipedia.org/wiki/", gsub(" ", "_", country_name))
+    
+    # Georgia separate to not confuse with US state of Georgia
+    if (country_name == "Georgia") {
+      url = "https://en.wikipedia.org/wiki/Georgia_(country)"
+    }
+    
+    # (Republic of) Ireland separate to not confuse with island of Ireland
+    if (country_name == "Ireland") {
+      url = "https://en.wikipedia.org/wiki/Republic_of_Ireland"
+    }
+    
+    # Palestine separate as the dataset separates west bank and gaza, so the web scraping gives both the Palestinian flag
+    if (grepl("Palestine", country_name)) {
+      url <- "https://en.wikipedia.org/wiki/State_of_Palestine"
+    }
+    
+    page <- read_html(url)
+    
+    # find the main image element
+    image_elem <- page %>%
+      html_nodes(".infobox img:first-child")
+    
+    # if image element exists, extract image URL 
+    # update the row in the dataset
+    if (length(image_elem) > 0) {
+      image_url <- image_elem %>% first() %>% html_attr("src")
+      data$flag_image[data$country_name == country_name] <- paste0("http:", image_url)
+    } else {
+      cat("No image found for ", country_name, "\n")
+    }
+  }, error = function(e) {
+    cat("Error: ", country_name, "\n")
+  })
+  
+}
+```
+
+**Parts of the following chunk of code are commented out to save time. In order for the flags to be shown later, it MUST be uncommented. Keep in mind that it will save files onto your computer**
+```{r}
+# In order to save time later, the images are downloaded locally. 
+# For the purpose of this r markdown the downloading lines have been commented out
+# In order for later code to work, these lines must be uncommented
+for (i in seq_along(data$flag_image)) {
+  filename <- paste0("flag_", data$country_name[i], ".png")
+  filename <- gsub("/", "_", filename)
+  # if (data$flag_image == "") {
+  #   next
+  # }
+  # if (i == 1) {
+  #  link <- data$flag_image[i]
+  #  GET(link, write_disk(filename, overwrite = TRUE))
+  # }
+  # else if (data$flag_image[i-1] != filename) {
+  #  link <- data$flag_image[i]
+  #  GET(link, write_disk(filename, overwrite = TRUE))
+  # }
+  
+  
+  #Change the flag_image column to the local filename
+  data$flag_image[i] <- filename
+}
+
+```
+All of the flag images are now attached as an extra column on the dataframe
+
+
+## Static Image
+
+The next code will be able to be viewed whether run in rmd or shown in the static html file created. It shows the countries with the top 10 Electoral Democracy Indices in 2022.
+```{r}
+colors <- c("Europe" = "dodgerblue2", "Americas" = "chocolate1", "Asia" = "firebrick2", "Africa" = "chartreuse3", "Oceania" = "darkorchid1")
+
+# Include only 2022
+data2 <- subset(data, year == 2022)
+
+# Order countries by Electoral Democracy Indices
+data2 <- data2[order(-data2$v2x_polyarchy),]
+data2$country_name <- reorder(data2$country_name, -data2$v2x_polyarchy)
+
+# Select top 10 countries
+top_countries <- head(data2, 10)
+
+# Set the flag image size
+img_height <- 0.8
+img_width <- 0.9
+
+# Function to read and embed the flag image in the plot
+embed_image <- function(img_path, x, y) {
+  img_raw <- readBin(img_path, "raw", file.info(img_path)$size)
+  encoded_image <- base64enc::dataURI(img_raw, mime = "image/png")
+  list(source = encoded_image, xref = "x", yref = "y", xanchor = "center", yanchor = "middle",
+       sizex = img_width, sizey = img_height, x = x, y = y)
+}
+
+# Code to be used to embed the images
+img_sources <- list()
+for (i in 1:nrow(top_countries)) {
+  img_path <- top_countries$flag_image[i]
+  x <- top_countries$country_name[i]
+  y <- max(top_countries$v2x_polyarchy) +0.1
+  img_sources[[i]] <- embed_image(img_path, x = x, y = y)
+}
+
+# Make the bar plot
+plot <- plotly::plot_ly(data = top_countries, x = ~country_name, y = ~v2x_polyarchy, color = ~continent, colors = colors[unique(top_countries$continent)],
+                        type = "bar", source = "bar_source", text = ~country_name, textposition = "inside",
+                        textfont = list(size = 14, color = "white")) %>%
+  plotly::layout(title = list(text = "Electoral Democracy Index by Country", y = 0.975), xaxis = list(title = "Country", showticklabels = FALSE),
+                 yaxis = list(title = "Electoral Democracy Index", range = c(0, 1.1)), barmode = "group", images = img_sources)
+
+plot
+
+```
+
+As we can see here, 9 of the 10 countries with the highest Electoral Democracy Indices are in Europe. The only exception is New Zealand, which is in Oceania. All three of the top 3 countries are in Scandinavia. 
+
+The code below will only be able to be viewed when run in rmd, not in the static html file created. It shows you the top 10 countries by Democracy Index. This time, however, you may choose which democracy index to go by, as well as which year to choose. You may also subset the data to a single continent if you wish to do so. 
+
+## Shiny Object
+
+**If you would like to see the interactivity, please uncomment "#runtime: shiny" at the top of this rmd. A video of the interactivity is also provided**
+```{r}
+
+# UI to select continent
+dropdown_ui <- selectInput("continent", "Select a continent:", choices = c("All", levels(factor(data$continent, exclude = NA))), selected = "All")
+
+# UI to select year
+slider_ui <- sliderInput("year", "Choose a year:", min = min(data$year), max = max(data$year), value = max(data$year), step = 1)
+
+# UI to select which Democracy index
+variable_ui <- selectInput("variable", "Select a variable to plot:", choices = c("Electoral democracy index" = "v2x_polyarchy", 
+                                                                                 "Liberal democracy index" = "v2x_libdem", 
+                                                                                 "Participatory democracy index" = "v2x_partipdem", 
+                                                                                 "Egalitarian democracy index" = "v2x_egaldem",
+                                                                                 "Deliberative democracy index" = "v2x_delibdem"), 
+                           selected = "Electoral democracy index")
+
+server <- function(input, output, session) {
+  
+  # Subset data based on the selected year and continent
+  data_subset <- reactive({
+    if (input$continent == "All") {
+      subset(data, year == input$year)
+    } else {
+      subset(data, year == input$year & continent == input$continent)
+    }
+  })
+  
+  # Order data by the selected democracy index
+  data_ordered <- reactive({
+    data_subset() %>%
+      arrange(desc(get(input$variable)))
+  })
+  
+  # Top 10 countries based on the democracy index
+  top_countries <- reactive({
+    head(data_ordered(), 10)
+  })
+  
+  # Set the flag image size
+  img_height <- 0.8
+  img_width <- 0.9
+  
+  # Function to read and embed the flag image in the plot
+  embed_image <- function(img_path, x, y) {
+    img_raw <- readBin(img_path, "raw", file.info(img_path)$size)
+    encoded_image <- base64enc::dataURI(img_raw, mime = "image/png")
+    list(source = encoded_image, xref = "x", yref = "y", xanchor = "center", yanchor = "middle",
+         sizex = img_width, sizey = img_height, x = x, y = y)
+  }
+  
+  # Code to be used to embed the images
+  img_sources <- reactive({
+    img_sources_list <- list()
+    for (i in 1:nrow(top_countries())) {
+      img_path <- top_countries()$flag_image[i]
+      x <- top_countries()$country_name[i]
+      y <- max(top_countries()[, input$variable]) + 0.12
+      img_sources_list[[i]] <- embed_image(img_path, x = x, y = y)
+    }
+    img_sources_list
+  })
+  
+  # Make the bar plot
+  output$plot <- renderPlotly({
+    # Reorder country_name based on the selected variable
+    top_countries_ordered <- top_countries() %>%
+      arrange(desc(get(input$variable)))
+    
+    plotly::plot_ly(data = top_countries_ordered, x = ~reorder(country_name, -get(input$variable)), y = ~get(input$variable), color = ~continent, 
+                    colors = colors[unique(top_countries()$continent)], type = "bar", source = "bar_source", 
+                    text = ~country_name, textposition = "inside", textfont = list(size = 14, color = "white")) %>%
+      plotly::layout(title = list(text = paste(switch(input$variable,
+                                                      "v2x_polyarchy" = "Electoral democracy index",
+                                                      "v2x_libdem" = "Liberal democracy index",
+                                                      "v2x_partipdem" = "Participatory democracy index",
+                                                      "v2x_egaldem" = "Egalitarian democracy index",
+                                                      "v2x_delibdem" = "Deliberative democracy index"), "by Country"), y = 0.975), 
+                     xaxis = list(title = "Country", showticklabels = FALSE, tickangle = -45, tickfont = list(size = 12)),
+                     yaxis = list(title = switch(input$variable,
+                                                 "v2x_polyarchy" = "Electoral democracy index",
+                                                 "v2x_libdem" = "Liberal democracy index",
+                                                 "v2x_partipdem" = "Participatory democracy index",
+                                                 "v2x_egaldem" = "Egalitarian democracy index",
+                                                 "v2x_delibdem" = "Deliberative democracy index"), range = c(0, 1.1)), barmode = "group", images = img_sources())
+    
+  })
+  
+}
+
+# Run the Shiny app with all three UIs
+shinyApp(ui = fluidPage(variable_ui, dropdown_ui, slider_ui, plotlyOutput("plot")), server = server)
+```
+
+https://www.youtube.com/watch?v=OlqXibUtCqc
+
+As this bar graph is editable, many observations can be made. As a general trend, the democracy indices have increased over time. While the US started off as one of the most democratic countries in the world, it has since fallen out of the top 10. Countries in Africa tend to be the least democratic, but generally there has been a trend of the most democratic countries in the world shifting from being in the Americas to being in Europe over time.
+
+# **Country Names over Time**
+
+
+The following code will show some of the most common non-stop words that appear in the historical names of countries in the dataset. Historical countries does not exclude modern countries. Instead, it includes the full, official names as countries. For example, India's "historical name" in 2022 is "Republic of India". These historical names include many countries before they were independent. India, prior to its independence, is known as "Empire of India" or "British India" in the dataset.
+```{r}
+# Split histname into unique words and keep only the histname and year columns
+# Words between brackets were removed, as we decided that these should not count as part of the historical name
+data_clean <- data %>% 
+  select(histname, year) %>% 
+  mutate(histname = gsub("\\[.*?\\]", "", histname)) %>% 
+  mutate(histname = str_replace_all(histname, "[^[:alpha:]]", " ")) %>% 
+  mutate(histname = tolower(histname)) %>%
+  mutate(histname = trimws(histname)) %>%
+  separate_rows(histname, sep = " ")
+
+
+# Calculate frequency of each word per year
+# Because earlier years in the dataset have more countries, it would be easier 
+# to interpret change by using the frequency of a word rather than the absolute number
+word_freq <- data_clean %>% 
+  filter(!(histname == "" | histname %in% stopwords("en"))) %>% 
+  group_by(histname, year) %>% 
+  summarize(n = n()) %>% 
+  group_by(year) %>% 
+  mutate(freq = n / sum(n)) %>% 
+  ungroup() %>% 
+  select(word = histname, year, freq) %>% 
+  filter(freq > 0)
+
+# Spread the data to have one column for each year
+df_freq <- word_freq %>% 
+  spread(year, freq, fill = 0)
+
+# Words were only kept if they existed in at least 5.5% of the data in any given year
+# This number was chosen to limit the graph to a smaller number of lines
+df_filtered <- df_freq %>% 
+  filter_if(is.numeric, any_vars(. > 0.055))
+
+df_reformatted <- df_filtered %>% 
+  pivot_longer(cols = -word, names_to = "year", values_to = "freq") %>% 
+  mutate(year = as.numeric(year))
+
+colors <- c("firebrick3", "darkorange2", "gold2", "forestgreen", "dodgerblue3", "darkorchid2")
+
+ggplot(df_reformatted, aes(x = year, y = freq, color = word)) +
+  geom_line(size = 1.2) +
+  scale_x_continuous(breaks = seq(min(df_reformatted$year), max(df_reformatted$year), by = 25),
+                     labels = function(x) format(x, format = "%Y")) +
+  scale_color_manual(values = colors) +  # Set the color palette
+  ggtitle("Words in country name over time") +
+  labs(x = "Year", y = "Frequency", color = "Word") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  theme_fivethirtyeight(base_size = 12) +
+  geom_text(aes(label = "Republic", x = 1962, y = 0.24),
+            color = "darkorchid2", size = 4, hjust = 0, fontface = "bold", angle = 35) +
+  geom_text(aes(label = "Kingdom", x = 1810, y = 0.123),
+            color = "forestgreen", size = 4, hjust = 0, fontface = "bold", angle = 5) +
+  geom_text(aes(label = "Empire", x = 1870, y = 0.073),
+            color = "gold3", size = 4, hjust = 0, fontface = "bold", angle = 357) +
+  geom_text(aes(label = "Colony", x = 1951, y = 0.090),
+            color = "darkorange2", size = 4, hjust = 0, fontface = "bold", angle = 330) +
+  geom_text(aes(label = "British", x = 1901, y = 0.10),
+            color = "firebrick3", size = 4, hjust = 0, fontface = "bold", angle = 355) +
+  geom_text(aes(label = "Protectorate", x = 1923, y = 0.035),
+            color = "dodgerblue3", size = 4, hjust = 0, fontface = "bold", angle = 349) +
+  guides(color = "none")
+
+
+```
+
+We can see several trends going on here. 
+
+First off, the term 'republic' appears in far more countries now than at the beginning of the dataset, in 1789. This is likely due to the decrease in the number of kingdoms in the world. However, not all countries which have 'republic' in their name are democratic, such as the People's Republic of China. Nonetheless, republic is now the most popular non-stop word for a country name to have.
+
+In contrast, kingdom is no longer a very popular term. While it has not fallen off to the same degree that 'republic' has risen, it certainly makes up a smaller percentage of countries. In all fairness, this may also be due to the fact that the dataset has more countries inserted at later dates, as is evident in the year 1900. 
+
+'British', 'colony', and 'protectorate' all had their high points in the first half of the 20th century. This makes sense as the British empire, as well as other European empires fell in the decades following WW2.
+
+'empire' has a high point in the second half of the 19th century. There could be multiple reasons for this, but it may just be because of more countries being inserted into the data around 1900.
+
+# **Leaders and Democracy Index**
+
+Another way to look at Democracy Index is by looking at the leaders that lead the countries at the time. The following graphs will show Electoral Democracy Index over time, with the last ~8 leaders being represented. What this means also is that the time spans will be different for each graph. Also make note that the y-axis will change for each graph, so do not compare graphs against one another. 
+
+It is important to remember that leaders do not give the full picture for the democracy index. As such, all the conclusions we will draw from the graphs will be mere observations, rather than political claims about how good or bad leaders are.
+
+## United States of America
+
+```{r}
+usa_data <- subset(data, country_text_id == "USA" & year >= 1977)
+
+# Order the Presidents in chronological order
+ordered_v2exnamhos <- unique(usa_data$v2exnamhos[order(usa_data$year)])[!is.na(unique(usa_data$v2exnamhos[order(usa_data$year)]))]
+
+# Used in case a single person serves nonconsecutive terms
+usa_data$consec_years <- with(usa_data, ave(year, v2exnamhos, FUN = function(x) cumsum(c(1, diff(x) != 1))))
+
+usa_data$v2exnamhos <- ifelse(usa_data$v2exnamhos == "James Earl Carter", "Jimmy Carter", usa_data$v2exnamhos)
+usa_data$v2exnamhos <- ifelse(usa_data$v2exnamhos == "Ronald Wilson Reagan", "Ronald Reagan", usa_data$v2exnamhos)
+usa_data$v2exnamhos <- ifelse(usa_data$v2exnamhos == "George Herbert Walker Bush", "George H. W. Bush", usa_data$v2exnamhos)
+usa_data$v2exnamhos <- ifelse(usa_data$v2exnamhos == "William Jefferson Clinton", "Bill Clinton", usa_data$v2exnamhos)
+usa_data$v2exnamhos <- ifelse(usa_data$v2exnamhos == "George Walker Bush", "George W. Bush", usa_data$v2exnamhos)
+usa_data$v2exnamhos <- ifelse(usa_data$v2exnamhos == "Barack Hussein Obama", "Barack Obama", usa_data$v2exnamhos)
+usa_data$v2exnamhos <- ifelse(usa_data$v2exnamhos == "Donald John Trump", "Donald Trump", usa_data$v2exnamhos)
+usa_data$v2exnamhos <- ifelse(usa_data$v2exnamhos == "Joseph Robinette Biden Jr.", "Joe Biden", usa_data$v2exnamhos)
+
+v2ex_levels <- unique(usa_data$v2exnamhos)
+
+# Color palette
+num_colors <- length(v2ex_levels)
+palette <- brewer.pal(num_colors, "Set2")
+
+# Plot the lines
+ggplot(usa_data, aes(x = year, y = v2x_polyarchy, color = v2exnamhos, 
+                     group = interaction(v2exnamhos, consec_years))) + 
+  geom_line(size = 1.5) +
+  geom_point() +
+  labs(x = "Year", y = "Electoral Democracy Index", color = "US President") +
+  ggtitle("Electoral Democracy Index by US President Over Time") +
+  theme_bw() +
+  scale_color_manual(values = setNames(palette, v2ex_levels)) +
+  theme_fivethirtyeight(base_size = 12) +
+  geom_text(aes(label = "Carter", x = 1976.5, y = 0.839),
+            color = "#66C2A5", size = 4, hjust = 0, fontface = "bold", angle = 47) +
+  geom_text(aes(label = "Reagan", x = 1982.5, y = 0.855),
+            color = "#FC8D62", size = 4, hjust = 0, fontface = "bold", angle = 7) +
+  geom_text(aes(label = "HW Bush", x = 1988.5, y = 0.869),
+            color = "#8DA0CB", size = 3, hjust = 0, fontface = "bold", angle = 25) +
+  geom_text(aes(label = "Clinton", x = 1994.5, y = 0.866),
+            color = "#E78AC3", size = 4, hjust = 0, fontface = "bold", angle = 358) +
+  geom_text(aes(label = "W Bush", x = 2003, y = 0.868),
+            color = "#A6D854", size = 4, hjust = 0, fontface = "bold", angle = 55) +
+  geom_text(aes(label = "Obama", x = 2010, y = 0.893),
+            color = "#FFD92F", size = 4, hjust = 0, fontface = "bold", angle = 345) +
+  geom_text(aes(label = "Trump", x = 2016.1, y = 0.815),
+            color = "#E5C494", size = 4, hjust = 0, fontface = "bold", angle = 303) +
+  geom_text(aes(label = "Biden", x = 2021.5, y = 0.808),
+            color = "#B3B3B3", size = 4, hjust = 0, fontface = "bold", angle = 52) +
+  guides(color = "none")
+
+
+```
+
+We can see here a few notable points. 
+
+The democracy index increases over the Carter Administration, likely as a residual of civil rights increasing.
+
+The democracy index has a sharp downturn at the beginning of the Bush Jr.'s presidency, likely as a result of the controversial 2000 election and later Patriot Act.
+
+The democracy index has a sharp downturn at the beginning of the Trump presidency, likely as a result of the 2016 election and subsequent Trump presidency. It failed to recover upon the election of Biden likely due to the 2020 election and residual election denialism. 
+
+## China
+
+```{r}
+chn_data <- subset(data, country_text_id == "CHN" & year >= 1928)
+
+chn_data$v2exnamhos[chn_data$year <= 1992 & chn_data$year >= 1959] <- chn_data$v2exnamhog[chn_data$year <= 1992 & chn_data$year >= 1959]
+
+# Order the Leaders in chronological order
+ordered_v2exnamhos <- unique(chn_data$v2exnamhos[order(chn_data$year)])[!is.na(unique(chn_data$v2exnamhos[order(chn_data$year)]))]
+
+# Used in case a single person serves nonconsecutive terms
+chn_data$consec_years <- with(chn_data, ave(year, v2exnamhos, FUN = function(x) cumsum(c(1, diff(x) != 1))))
+
+v2ex_levels <- unique(chn_data$v2exnamhos)
+
+# Color palette
+num_colors <- length(v2ex_levels)
+palette <- brewer.pal(num_colors, "Set2")
+
+# Plot the lines
+ggplot(chn_data, aes(x = year, y = v2x_polyarchy, color = v2exnamhos, 
+                     group = interaction(v2exnamhos, consec_years))) + 
+  geom_line(size = 1.5) +
+  geom_point() +
+  labs(x = "Year", y = "Electoral Democracy Index", color = "Chinese Leader") +
+  ggtitle("Electoral Democracy Index by Chinese Leader Over Time") +
+  theme_bw() +
+  scale_color_manual(values = setNames(palette, v2ex_levels)) +
+  theme_fivethirtyeight(base_size = 12.5) +
+  geom_text(aes(label = "Chiang Kai-shek", x = 1948, y = 0.145),
+            color = "#66C2A5", size = 3.5, hjust = 0, fontface = "bold", angle = 0) + 
+  geom_text(aes(label = "Chiang Kai-shek", x = 1929, y = 0.085),
+            color = "#66C2A5", size = 3.5, hjust = 0, fontface = "bold", angle = 338) +
+  geom_text(aes(label = "Lin Sen", x = 1933, y = 0.097),
+            color = "#FC8D62", size = 3.5, hjust = 0, fontface = "bold", angle = 7) +
+  geom_text(aes(label = "Mao", x = 1959, y = 0.077),
+            color = "#8DA0CB", size = 4, hjust = 0, fontface = "bold", angle = 0) +
+  geom_text(aes(label = "Hua Guofeng", x = 1976.5, y = 0.066),
+            color = "#E78AC3", size = 2.5, hjust = 0, fontface = "bold", angle = 0) +
+  geom_text(aes(label = "Deng", x = 1981, y = 0.104),
+            color = "#A6D854", size = 3.5, hjust = 0, fontface = "bold", angle = 22) +
+  geom_text(aes(label = "Jiang", x = 1994, y = 0.107),
+            color = "#FFD92F", size = 4, hjust = 0, fontface = "bold", angle = 0) +
+  geom_text(aes(label = "Hu", x = 2006.5, y = 0.091),
+            color = "#E5C494", size = 4, hjust = 0, fontface = "bold", angle = 0) +
+  geom_text(aes(label = "Xi", x = 2016.6, y = 0.085),
+            color = "#B3B3B3", size = 4, hjust = 0, fontface = "bold", angle = 316) +
+  guides(color = "none")
+```
+
+General trends to see here is the increase in democracy score under Ye Jianying and the decrease under current leader Xi Jinping.
+
+## India
+
+```{r}
+ind_data <- subset(data, country_text_id == "IND" & year >= 1989)
+
+# Order the Prime Ministers in chronological order
+ordered_v2exnamhog <- unique(ind_data$v2exnamhog[order(ind_data$year)])[!is.na(unique(ind_data$v2exnamhog[order(ind_data$year)]))]
+
+# Used in case a single person serves nonconsecutive terms
+ind_data$consec_years <- with(ind_data, ave(year, v2exnamhog, FUN = function(x) cumsum(c(1, diff(x) != 1))))
+
+v2ex_levels <- unique(ind_data$v2exnamhog)
+
+# Color palette
+num_colors <- length(v2ex_levels)
+palette <- brewer.pal(num_colors, "Set2")
+
+# Plot the lines
+ggplot(ind_data, aes(x = year, y = v2x_polyarchy, color = v2exnamhog, 
+                     group = interaction(v2exnamhog, consec_years))) + 
+  geom_line(size = 1.5) +
+  geom_point() +
+  labs(x = "Year", y = "Electoral Democracy Index", color = "Indian Prime Minister") +
+  ggtitle("Electoral Democracy Index by Indian Prime Minister Over Time") +
+  theme_bw() +
+  scale_color_manual(values = setNames(palette, v2ex_levels)) +
+  theme_fivethirtyeight(base_size = 11.5) +
+  geom_text(aes(label = "Modi", x = 2016.7, y = 0.54),
+            color = "#B3B3B3", size = 4, hjust = 0, fontface = "bold", angle = 320) +
+  geom_text(aes(label = "Singh", x = 2007.1, y = 0.695),
+            color = "#E5C494", size = 4, hjust = 0, fontface = "bold", angle = 340) +
+  geom_text(aes(label = "Vajpayee", x = 1998.5, y = 0.72),
+            color = "#FFD92F", size = 4, hjust = 0, fontface = "bold", angle = 355) +
+  geom_text(aes(label = "Gujral", x = 1996.8, y = 0.765),
+            color = "#A6D854", size = 3, hjust = 0, fontface = "bold", angle = 13) +
+  geom_text(aes(label = "Deve Gowda", x = 1995.8, y = 0.73),
+            color = "#E78AC3", size = 3, hjust = 0, fontface = "bold", angle = 330) +
+  geom_text(aes(label = "Rao", x = 1992, y = 0.75),
+            color = "#8DA0CB", size = 4, hjust = 0, fontface = "bold", angle = 10) +
+geom_text(aes(label = "Shekhar", x = 1990.5, y = 0.69),
+            color = "#FC8D62", size = 3, hjust = 0, fontface = "bold", angle = 340) +
+  geom_text(aes(label = "V.P. Singh", x = 1989, y = 0.655),
+            color = "#66C2A5", size = 3, hjust = 0, fontface = "bold", angle = 340) +
+  guides(color = "none")
+```
+
+We can see under these trends that the high democracy mark occurred in the late 90s, with the democracy index appearing to be lower both before and after it. A sharp decrease in democracy index has occurred under the premiership of Narendra Modi. 
+
+## Russia/Soviet Union
+
+```{r}
+rus_data <- subset(data, country_text_id == "RUS" & year >= 1953)
+
+# Order the Leaders in chronological order
+ordered_v2exnamhos <- unique(rus_data$v2exnamhos[order(rus_data$year)])[!is.na(unique(rus_data$v2exnamhos[order(rus_data$year)]))]
+
+# Used in case a single person serves nonconsecutive terms (Such as Putin)
+rus_data$consec_years <- with(rus_data, ave(year, v2exnamhos, FUN = function(x) cumsum(c(1, diff(x) != 1))))
+
+rus_data$v2exnamhos <- ifelse(rus_data$v2exnamhos == "Nikita Sergeyevich Khrushchev", "Nikita Khrushchev", rus_data$v2exnamhos)
+rus_data$v2exnamhos <- ifelse(rus_data$v2exnamhos == "Leonid Ilich Brezhnev", "Leonid Brezhnev", rus_data$v2exnamhos)
+rus_data$v2exnamhos <- ifelse(rus_data$v2exnamhos == "Yury Vladimirovich Andropov", "Yuri Andoropov", rus_data$v2exnamhos)
+rus_data$v2exnamhos <- ifelse(rus_data$v2exnamhos == "Konstantin Ustinovich Chernenko", "Konstantin Chernenko", rus_data$v2exnamhos)
+rus_data$v2exnamhos <- ifelse(rus_data$v2exnamhos == "Mikhail Sergeyevich Gorbachev", "Mikhail Gorbachev", rus_data$v2exnamhos)
+rus_data$v2exnamhos <- ifelse(rus_data$v2exnamhos == "Boris Nikolayevich Yeltsin", "Boris Yeltsin", rus_data$v2exnamhos)
+rus_data$v2exnamhos <- ifelse(rus_data$v2exnamhos == "Vladimir Vladimirovich Putin", "Vladimir Putin", rus_data$v2exnamhos)
+rus_data$v2exnamhos <- ifelse(rus_data$v2exnamhos == "Dmitry Anatolyevich Medvedev", "Dmitry Medvedev", rus_data$v2exnamhos)
+
+v2ex_levels <- unique(rus_data$v2exnamhos)
+
+# Color palette
+num_colors <- length(v2ex_levels)
+palette <- brewer.pal(num_colors, "Set2")
+
+# Plot the lines
+ggplot(rus_data, aes(x = year, y = v2x_polyarchy, color = v2exnamhos, 
+                     group = interaction(v2exnamhos, consec_years))) + 
+  geom_line(size = 1.5) +
+  geom_point() +
+  labs(x = "Year", y = "Electoral Democracy Index", color = "Russian/Soviet Leader") +
+  ggtitle("Electoral Democracy Index by Russian/Soviet Leader Over Time") +
+  theme_bw() +
+  scale_color_manual(values = setNames(palette, v2ex_levels)) +
+  theme_fivethirtyeight(base_size = 11.5) +
+  geom_text(aes(label = "Medvedev", x = 2008, y = 0.33),
+            color = "#B3B3B3", size = 3, hjust = 0, fontface = "bold", angle = 5) +
+  geom_text(aes(label = "Putin", x = 1999.5, y = 0.358),
+            color = "#E5C494", size = 4, hjust = 0, fontface = "bold", angle = 310) +
+  geom_text(aes(label = "Putin", x = 2014, y = 0.25),
+            color = "#E5C494", size = 4, hjust = 0, fontface = "bold", angle = 357) +
+  geom_text(aes(label = "Yeltsin", x = 1992.7, y = 0.51),
+            color = "#FFD92F", size = 4, hjust = 0, fontface = "bold", angle = 348) +
+  geom_text(aes(label = "Gorbachev", x = 1988, y = 0.122),
+            color = "#A6D854", size = 4, hjust = 0, fontface = "bold", angle = 65) +
+  geom_text(aes(label = "Chernenko", x = 1984.5, y = 0.09),
+            color = "#E78AC3", size = 2.5, hjust = 0, fontface = "bold", angle = 0) +
+  geom_text(aes(label = "Andropov", x = 1982, y = 0.12),
+            color = "#8DA0CB", size = 2.5, hjust = 0, fontface = "bold", angle = 65) +
+  geom_text(aes(label = "Brezhnev", x = 1968, y = 0.122),
+            color = "#FC8D62", size = 4, hjust = 0, fontface = "bold", angle = 7) +
+  geom_text(aes(label = "Khrushchev", x = 1953, y = 0.124),
+            color = "#66C2A5", size = 4, hjust = 0, fontface = "bold", angle = 5) +
+  guides(color = "none")
+```
+
+We can see the sharp increase in democracy scores under Gorbachev and Yeltsin, as the Soviet Union slowly opened itself up, collapsed, and the Russian Federation was born. We can also see the sharp decrease in democracy score under the presidency of Putin that has occurred since the 2000s.
+
+## Brazil
+
+```{r}
+bra_data <- subset(data, country_text_id == "BRA" & year >= 1985)
+
+# Order the Leaders in chronological order
+ordered_v2exnamhog <- unique(bra_data$v2exnamhos[order(bra_data$year)])[!is.na(unique(bra_data$v2exnamhos[order(bra_data$year)]))]
+
+# Used in case a single person serves nonconsecutive terms (Such as Putin)
+bra_data$consec_years <- with(bra_data, ave(year, v2exnamhos, FUN = function(x) cumsum(c(1, diff(x) != 1))))
+
+bra_data$v2exnamhos <- ifelse(bra_data$v2exnamhos == "Fernando Alfonso Collor de Mello", "Fernando Collor de Mello", bra_data$v2exnamhos)
+bra_data$v2exnamhos <- ifelse(bra_data$v2exnamhos == "Dilma Vana Rousseff", "Dilma Rousseff", bra_data$v2exnamhos)
+bra_data$v2exnamhos <- ifelse(bra_data$v2exnamhos == "Jair Messias Bolsonaro", "Jair Bolsonaro", bra_data$v2exnamhos)
+
+v2ex_levels <- unique(bra_data$v2exnamhos)
+
+# Color palette
+num_colors <- length(v2ex_levels)
+palette <- brewer.pal(num_colors, "Set2")
+
+# Plot the lines
+ggplot(bra_data, aes(x = year, y = v2x_polyarchy, color = v2exnamhos, 
+                     group = interaction(v2exnamhos, consec_years))) + 
+  geom_line(size = 1.5) +
+  geom_point() +
+  labs(x = "Year", y = "Electoral Democracy Index", color = "Brazilian President") +
+  ggtitle("Electoral Democracy Index by Brazilian President Over Time") +
+  theme_bw() +
+  scale_color_manual(values = setNames(palette, v2ex_levels)) +
+  theme_fivethirtyeight(base_size = 12) +
+  geom_text(aes(label = "Bolsonaro", x = 2018.5, y = 0.66),
+            color = "#B3B3B3", size = 4, hjust = 0, fontface = "bold", angle = 350) +
+  geom_text(aes(label = "Temer", x = 2016.3, y = 0.8),
+            color = "#E5C494", size = 3, hjust = 0, fontface = "bold", angle = 340) +
+  geom_text(aes(label = "Rousseff", x = 2011, y = 0.854),
+            color = "#FFD92F", size = 4, hjust = 0, fontface = "bold", angle = 355) +
+  geom_text(aes(label = "Lula de Silva", x = 2003.5, y = 0.9),
+            color = "#A6D854", size = 3.7, hjust = 0, fontface = "bold", angle = 3) +
+  geom_text(aes(label = "Cardoso", x = 1996.5, y = 0.825),
+            color = "#E78AC3", size = 4, hjust = 0, fontface = "bold", angle = 3) +
+  geom_text(aes(label = "Franco", x = 1991.8, y = 0.87),
+            color = "#8DA0CB", size = 3, hjust = 0, fontface = "bold", angle = 4) +
+  geom_text(aes(label = "Collor", x = 1990.5, y = 0.813),
+            color = "#FC8D62", size = 3, hjust = 0, fontface = "bold", angle = 340) +
+  geom_text(aes(label = "Sarney", x = 1985.2, y = 0.5),
+            color = "#66C2A5", size = 4, hjust = 0, fontface = "bold", angle = 70) +
+  guides(color = "none")
+```
+
+We can see the sharp increase in democracy score that occurred under the Costa Presidency, and the relative stability afterwards. We can also see the decrease that has occurred afterwards, under Lulia and Bolsonaro.
+
+## United Kingdom
+
+```{r}
+gbr_data <- subset(data, country_text_id == "GBR" & year >= 1979)
+
+# Order the Leaders in chronological order
+ordered_v2exnamhog <- unique(gbr_data$v2exnamhog[order(gbr_data$year)])[!is.na(unique(gbr_data$v2exnamhog[order(gbr_data$year)]))]
+
+# Used in case a single person serves nonconsecutive terms
+gbr_data$consec_years <- with(gbr_data, ave(year, v2exnamhog, FUN = function(x) cumsum(c(1, diff(x) != 1))))
+
+gbr_data$v2exnamhog <- ifelse(gbr_data$v2exnamhog == "Anthony Blair", "Tony Blair", gbr_data$v2exnamhog)
+
+v2ex_levels <- unique(gbr_data$v2exnamhog)
+
+# Color palette
+num_colors <- length(v2ex_levels)
+palette <- brewer.pal(num_colors, "Set2")
+
+# Plot the lines
+ggplot(gbr_data, aes(x = year, y = v2x_polyarchy, color = v2exnamhog, 
+                     group = interaction(v2exnamhog, consec_years))) + 
+  geom_line(size = 1.5) +
+  geom_point() +
+  labs(x = "Year", y = "Electoral Democracy Index", color = "British Prime Minister") +
+  ggtitle("Electoral Democracy Index by British Prime Minister Over Time") +
+  theme_bw() +
+  scale_color_manual(values = setNames(palette, v2ex_levels)) +
+  theme_fivethirtyeight(base_size = 11.5) +
+  geom_text(aes(label = "Sunak", x = 2021, y = 0.839),
+            color = "#B3B3B3", size = 3, hjust = 0, fontface = "bold", angle = 5) +
+  geom_text(aes(label = "Johnson", x = 2018.5, y = 0.855),
+            color = "#E5C494", size = 3.5, hjust = 0, fontface = "bold", angle = 7) +
+  geom_text(aes(label = "May", x = 2015.1, y = 0.854),
+            color = "#FFD92F", size = 3.5, hjust = 0, fontface = "bold", angle = 353) +
+  geom_text(aes(label = "Cameron", x = 2011, y = 0.878),
+            color = "#A6D854", size = 4, hjust = 0, fontface = "bold", angle = 340) +
+  geom_text(aes(label = "Brown", x = 2006.5, y = 0.865),
+            color = "#E78AC3", size = 3.5, hjust = 0, fontface = "bold", angle = 0) +
+  geom_text(aes(label = "Blair", x = 2002, y = 0.87),
+            color = "#8DA0CB", size = 4, hjust = 0, fontface = "bold", angle = 4) +
+  geom_text(aes(label = "Major", x = 1991.5, y = 0.818),
+            color = "#FC8D62", size = 4, hjust = 0, fontface = "bold", angle = 7) +
+  geom_text(aes(label = "Thatcher", x = 1981.5, y = 0.8184),
+            color = "#66C2A5", size = 4, hjust = 0, fontface = "bold", angle = 350) +
+  guides(color = "none")
+```
+
+We can see a sharp increase that occurs under the early premiership of Tony Blair. This is likely due to a combination of factors, namely the Good Friday Agreement and the reforms of the upper House of Lords in Parliament.
+
+## South Korea
+
+```{r}
+kor_data <- subset(data, country_text_id == "KOR" & year >= 1993)
+
+# Order the Leaders in chronological order
+ordered_v2exnamhos <- unique(kor_data$v2exnamhos[order(kor_data$year)])[!is.na(unique(kor_data$v2exnamhos[order(kor_data$year)]))]
+
+# Used in case a single person serves nonconsecutive terms
+kor_data$consec_years <- with(kor_data, ave(year, v2exnamhos, FUN = function(x) cumsum(c(1, diff(x) != 1))))
+
+v2ex_levels <- unique(kor_data$v2exnamhos)
+
+# Color palette
+num_colors <- length(v2ex_levels)
+palette <- brewer.pal(num_colors, "Set2")
+
+# Plot the lines
+ggplot(kor_data, aes(x = year, y = v2x_polyarchy, color = v2exnamhos, 
+                     group = interaction(v2exnamhos, consec_years))) + 
+  geom_line(size = 1.5) +
+  geom_point() +
+  labs(x = "Year", y = "Electoral Democracy Index", color = "South Korean President") +
+  ggtitle("Electoral Democracy Index by South Korean President Over Time") +
+  theme_bw() +
+  scale_color_manual(values = setNames(palette, v2ex_levels)) +
+  theme_fivethirtyeight(base_size = 11) +
+  geom_text(aes(label = "Yoon", x = 2021.3, y = 0.805),
+            color = "#B3B3B3", size = 3, hjust = 0, fontface = "bold", angle = 0) +
+  geom_text(aes(label = "Moon", x = 2018.2, y = 0.845),
+            color = "#E5C494", size = 4, hjust = 0, fontface = "bold", angle = 0) +
+  geom_text(aes(label = "Hwang", x = 2016.2, y = 0.74),
+            color = "#FFD92F", size = 3.5, hjust = 0, fontface = "bold", angle = 353) +
+  geom_text(aes(label = "Park", x = 2013.5, y = 0.73),
+            color = "#A6D854", size = 3.5, hjust = 0, fontface = "bold", angle = 350) +
+  geom_text(aes(label = "Lee", x = 2009.5, y = 0.763),
+            color = "#E78AC3", size = 4, hjust = 0, fontface = "bold", angle = 7) +
+  geom_text(aes(label = "Roh", x = 2004.2, y = 0.855),
+            color = "#8DA0CB", size = 4, hjust = 0, fontface = "bold", angle = 0) +
+  geom_text(aes(label = "Kim Dae-jung", x = 1998.4, y = 0.813),
+            color = "#FC8D62", size = 3.5, hjust = 0, fontface = "bold", angle = 30) +
+  geom_text(aes(label = "Kim Young-Sam", x = 1992.5, y = 0.745),
+            color = "#66C2A5", size = 3.3, hjust = 0, fontface = "bold", angle = 20) +
+  guides(color = "none")
+```
+
+South Korea seemingly has the democracy score heavily affected by who is president, as the index changes wildly depending on who the president is at a given moment in time.
+
+## South Africa
+
+```{r}
+zaf_data <- subset(data, country_text_id == "ZAF" & year >= 1984)
+
+# Order the Leaders in chronological order
+ordered_v2exnamhos <- unique(zaf_data$v2exnamhos[order(zaf_data$year)])[!is.na(unique(zaf_data$v2exnamhos[order(zaf_data$year)]))]
+
+# Used in case a single person serves nonconsecutive terms
+zaf_data$consec_years <- with(zaf_data, ave(year, v2exnamhos, FUN = function(x) cumsum(c(1, diff(x) != 1))))
+
+v2ex_levels <- unique(zaf_data$v2exnamhos)
+
+# Color palette
+num_colors <- length(v2ex_levels)
+palette <- brewer.pal(num_colors, "Set2")
+
+# Plot the lines
+ggplot(zaf_data, aes(x = year, y = v2x_polyarchy, color = v2exnamhos, 
+                     group = interaction(v2exnamhos, consec_years))) + 
+  geom_line(size = 1.5) +
+  geom_point() +
+  labs(x = "Year", y = "Electoral Democracy Index", color = "South African President") +
+  ggtitle("Electoral Democracy Index by South African President Over Time") +
+  theme_bw() +
+  scale_color_manual(values = setNames(palette, v2ex_levels)) +
+  theme_fivethirtyeight(base_size = 11) +
+  geom_text(aes(label = "Ramaphosa", x = 2018, y = 0.78),
+            color = "#E5C494", size = 3.5, hjust = 0, fontface = "bold", angle = 350) +
+  geom_text(aes(label = "Zuma", x = 2011, y = 0.74),
+            color = "#FFD92F", size = 4, hjust = 0, fontface = "bold", angle = 353) +
+  geom_text(aes(label = "Motlanthe", x = 2008.2, y = 0.8),
+            color = "#A6D854", size = 3, hjust = 0, fontface = "bold", angle = 8) +
+  geom_text(aes(label = "Mbeke", x = 2001.5, y = 0.715),
+            color = "#E78AC3", size = 4, hjust = 0, fontface = "bold", angle = 10) +
+  geom_text(aes(label = "Mandela", x = 1994, y = 0.7),
+            color = "#8DA0CB", size = 4, hjust = 0, fontface = "bold", angle = 2) +
+  geom_text(aes(label = "De Klerk", x = 1990, y = 0.195),
+            color = "#FC8D62", size = 4, hjust = 0, fontface = "bold", angle = 30) +
+  geom_text(aes(label = "Botha", x = 1984.5, y = 0.21),
+            color = "#66C2A5", size = 4, hjust = 0, fontface = "bold", angle = 0) +
+  guides(color = "none")
+```
+
+The main trend to be seen here is the huge increase in democracy index during the Nelson Mandela presidency as Apartheid ended. However, we can see that the democracy index has also dropped substantially over the course of the 2010s.
+
+# **Conclusion**
+
+Even from the small dive we made into the vdem dataset, we can see just how extensive the dataset is. A very small number of the variables were analyzed, and so there are nearly limitless ways to perform more exploratory analyses of the vdem data.
+
+From what we learned, country, continent, time, and leadership all can have affects on the other variables in the dataset. While all of these make sense, it is nonetheless fascinating to see how continents and time affect democracy indices, how time affects country names, and how leadership affects democracy indices. Perhaps in a more extensive study, we could analyze some of the other thousands of variables in the dataset.
